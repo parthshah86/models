@@ -42,6 +42,13 @@ _RESIZE_SIDE_MIN = 256
 _RESIZE_SIDE_MAX = 512
 
 
+def _get_h_w(image):
+  """Convenience for grabbing the height and width of an image.
+  """
+  shape = tf.shape(image)
+  return shape[0], shape[1]
+
+
 def _crop(image, offset_height, offset_width, crop_height, crop_width):
   """Crops the given image using the provided offsets and sizes.
 
@@ -98,7 +105,7 @@ def _random_crop(image, crop_height, crop_width):
 
   """
 
-  height, width, _ = tf.shape(image)
+  height, width = _get_h_w(image)
 
   # Create a random bounding box.
   #
@@ -129,7 +136,7 @@ def _central_crop(image, crop_height, crop_width):
   Returns:
     3-D tensor with cropped image.
   """
-  height, width, _ = tf.shape(image)
+  height, width = _get_h_w(image)
 
   total_crop_height = (height - crop_height)
   crop_top = total_crop_height // 2
@@ -187,10 +194,6 @@ def _smallest_size_at_least(height, width, smallest_side):
     new_height: an int32 scalar tensor indicating the new height.
     new_width: and int32 scalar tensor indicating the new width.
   """
-  # In the case that smallest_side is an int, convert to tensor.
-  smallest_side = tf.convert_to_tensor(smallest_side, dtype=tf.int32)
-  # Cast smallest_side as float. Note that this can't happen as part of
-  # the convert_to_tensor above, as that fails if smallest_side is a Tensor.
   smallest_side = tf.cast(smallest_side, tf.float32)
 
   height = tf.cast(height, tf.float32)
@@ -217,7 +220,7 @@ def _aspect_preserving_resize(image, smallest_side):
   """
   smallest_side = tf.convert_to_tensor(smallest_side, dtype=tf.int32)
 
-  height, width, _ = tf.shape(image)
+  height, width = _get_h_w(image)
   new_height, new_width = _smallest_size_at_least(height, width, smallest_side)
 
   resized_image = tf.image.resize_images(
