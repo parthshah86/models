@@ -121,7 +121,7 @@ def _mean_image_subtraction(image, means):
   """
   if image.get_shape().ndims != 3:
     raise ValueError('Input must be of size [height, width, C>0]')
-  num_channels = tf.shape(image)[2]
+  num_channels = image.get_shape().as_list()[-1]
   if len(means) != num_channels:
     raise ValueError('len(means) must match the number of channels')
 
@@ -214,7 +214,7 @@ def preprocess_image(image, output_height, output_width, is_training=False,
     resize_side = resize_side_min
     crop_fn = _central_crop
 
-  num_channels = tf.shape(image)[2]
+  num_channels = image.get_shape().as_list()[-1]
   image = _aspect_preserving_resize(image, resize_side)
   image = crop_fn(image, output_height, output_width)
 
