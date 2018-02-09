@@ -112,17 +112,12 @@ def _random_crop(image, crop_height, crop_width):
   # Use tf.random_uniform and not numpy.random.rand as doing the former would
   # generate random numbers at graph eval time, unlike the latter which
   # generates random numbers at graph definition time.
-  max_offset_height = height - crop_height + 1
-  max_offset_width = width - crop_width + 1
-  offset_height = tf.random_uniform(
-      [], maxval=max_offset_height, dtype=tf.int32)
-  offset_width = tf.random_uniform(
-      [], maxval=max_offset_width, dtype=tf.int32)
+  total_crop_height = (height - crop_height)
+  crop_top = tf.random_uniform([], maxval=total_crop_height + 1, dtype=tf.int32)
+  total_crop_width = (width - crop_width)
+  crop_left = tf.random_uniform([], maxval=total_crop_width + 1, dtype=tf.int32)
 
-  crop_top = height - offset_height
-  return tf.slice(image,
-                  [crop_top, offset_width, 0],
-                  [crop_height, crop_width, 3])
+  return tf.slice(image, [crop_top, crop_left, 0], [crop_height, crop_width, 3])
 
 
 def _central_crop(image, crop_height, crop_width):
