@@ -82,7 +82,7 @@ def parse_example_proto(example_serialized):
 
   Returns:
     image_buffer: Tensor tf.string containing the contents of a JPEG file.
-    label: Tensor tf.int32 containing the label.
+    label: Tensor tf.int64 containing the label.
   """
   # Dense features in Example proto.
   feature_map = {
@@ -103,8 +103,6 @@ def parse_example_proto(example_serialized):
 
   features = tf.parse_single_example(example_serialized, feature_map)
 
-  label = tf.cast(features['image/class/label'], dtype=tf.int32)
-
   return features['image/encoded'], label
 
 
@@ -124,6 +122,9 @@ def parse_record(raw_record, is_training):
       output_height=_DEFAULT_IMAGE_SIZE,
       output_width=_DEFAULT_IMAGE_SIZE,
       is_training=is_training)
+
+  # Flatten the labels, and convert to int32
+  label = tf.cast(tf.reshape(label, shape=[]), dtype=tf.int32)
 
   return image, tf.one_hot(label, _NUM_CLASSES)
 
