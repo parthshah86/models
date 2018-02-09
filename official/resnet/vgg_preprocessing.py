@@ -61,7 +61,7 @@ def _random_crop(image, crop_height, crop_width):
     3-D tensor with cropped image.
 
   """
-  height, width, channels = _get_h_w_c(image)
+  height, width, num_channels = _get_h_w_c(image)
 
   # Create a random bounding box.
   #
@@ -74,7 +74,7 @@ def _random_crop(image, crop_height, crop_width):
   crop_left = tf.random_uniform([], maxval=total_crop_width + 1, dtype=tf.int32)
 
   return tf.slice(
-      image, [crop_top, crop_left, 0], [crop_height, crop_width, channels])
+      image, [crop_top, crop_left, 0], [crop_height, crop_width, num_channels])
 
 
 def _central_crop(image, crop_height, crop_width):
@@ -88,14 +88,14 @@ def _central_crop(image, crop_height, crop_width):
   Returns:
     3-D tensor with cropped image.
   """
-  height, width, channels = _get_h_w_c(image)
+  height, width, num_channels = _get_h_w_c(image)
 
   total_crop_height = (height - crop_height)
   crop_top = total_crop_height // 2
   total_crop_width = (width - crop_width)
   crop_left = total_crop_width // 2
   return tf.slice(
-      image, [crop_top, crop_left, 0], [crop_height, crop_width, channels])
+      image, [crop_top, crop_left, 0], [crop_height, crop_width, num_channels])
 
 
 def _mean_image_subtraction(image, means):
@@ -121,7 +121,7 @@ def _mean_image_subtraction(image, means):
   """
   if image.get_shape().ndims != 3:
     raise ValueError('Input must be of size [height, width, C>0]')
-  num_channels = image.get_shape().as_list()[-1]
+  num_channels = tf.shape(image)[2]
   if len(means) != num_channels:
     raise ValueError('len(means) must match the number of channels')
 
@@ -208,16 +208,17 @@ def preprocess_image(image, output_height, output_width, is_training=False,
   if is_training:
     # For training, we want to randomize some of the distortions.
     resize_side = tf.random_uniform(
-        [], minval=resize_side_min, maxval=resize_side_max+1, dtype=tf.int32)
+        [], minval=resize_side_min, maxval=resize_side_max + 1, dtype=tf.int32)
     crop_fn = _random_crop
   else:
     resize_side = resize_side_min
     crop_fn = _central_crop
 
+  num_channels = tf.shape(image)[2]
   image = _aspect_preserving_resize(image, resize_side)
   image = crop_fn(image, output_height, output_width)
 
-  image.set_shape([output_height, output_width, tf.shape(image)[2]])
+  image.set_shape([output_height, output_width, num_channels])
 
   image = tf.cast(image, tf.float32)
   return _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
