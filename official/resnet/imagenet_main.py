@@ -105,7 +105,7 @@ def parse_example_proto(example_serialized):
 
   label = tf.cast(features['image/class/label'], dtype=tf.int32)
 
-  return image, label
+  return features['image/encoded'], label
 
 
 def parse_record(raw_record, is_training):
