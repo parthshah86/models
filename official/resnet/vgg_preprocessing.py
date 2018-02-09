@@ -242,17 +242,15 @@ def _smallest_size_at_least(height, width, smallest_side):
     new_height: an int32 scalar tensor indicating the new height.
     new_width: and int32 scalar tensor indicating the new width.
   """
-  smallest_side = tf.convert_to_tensor(smallest_side, dtype=tf.int32)
+  smallest_side = tf.convert_to_tensor(smallest_side, dtype=tf.float32)
+  height = tf.cast(height, tf.float32)
+  width = tf.cast(width, tf.float32)
 
-  height = tf.to_float(height)
-  width = tf.to_float(width)
-  smallest_side = tf.to_float(smallest_side)
+  smaller_dim = tf.minimum(height, width)
+  scale_ratio = smallest_side / smaller_dim
+  new_height = tf.to_int32(height * scale_ratio)
+  new_width = tf.to_int32(width * scale_ratio)
 
-  scale = tf.cond(tf.greater(height, width),
-                  lambda: smallest_side / width,
-                  lambda: smallest_side / height)
-  new_height = tf.to_int32(height * scale)
-  new_width = tf.to_int32(width * scale)
   return new_height, new_width
 
 
