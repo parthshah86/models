@@ -85,87 +85,37 @@ def _crop(image, offset_height, offset_width, crop_height, crop_width):
   return tf.reshape(image, cropped_shape)
 
 
-def _random_crop(image_list, crop_height, crop_width):
-  """Crops the given list of images.
-
-  The function applies the same crop to each image in the list. This can be
-  effectively applied when there are multiple image inputs of the same
-  dimension such as:
-
-    image, depths, normals = _random_crop([image, depths, normals], 120, 150)
+def _random_crop(image, crop_height, crop_width):
+  """Crops the given image.
 
   Args:
-    image_list: a list of image tensors of the same dimension but possibly
-      varying channel.
+    image: a 3-D image tensor
     crop_height: the new height.
     crop_width: the new width.
 
   Returns:
-    the image_list with cropped images.
+    3-D tensor with cropped image.
 
-  Raises:
-    ValueError: if there are multiple image inputs provided with different size
-      or the images are smaller than the crop dimensions.
   """
-  if not image_list:
-    raise ValueError('Empty image_list.')
 
-  # Compute the rank assertions.
-  rank_assertions = []
-  for i in range(len(image_list)):
-    image_rank = tf.rank(image_list[i])
-    rank_assert = tf.Assert(
-        tf.equal(image_rank, 3),
-        ['Wrong rank for tensor  %s [expected] [actual]',
-         image_list[i].name, 3, image_rank])
-    rank_assertions.append(rank_assert)
-
-  with tf.control_dependencies([rank_assertions[0]]):
-    image_shape = tf.shape(image_list[0])
-  image_height = image_shape[0]
-  image_width = image_shape[1]
-  crop_size_assert = tf.Assert(
-      tf.logical_and(
-          tf.greater_equal(image_height, crop_height),
-          tf.greater_equal(image_width, crop_width)),
-      ['Crop size greater than the image size.'])
-
-  asserts = [rank_assertions[0], crop_size_assert]
-
-  for i in range(1, len(image_list)):
-    image = image_list[i]
-    asserts.append(rank_assertions[i])
-    with tf.control_dependencies([rank_assertions[i]]):
-      shape = tf.shape(image)
-    height = shape[0]
-    width = shape[1]
-
-    height_assert = tf.Assert(
-        tf.equal(height, image_height),
-        ['Wrong height for tensor %s [expected][actual]',
-         image.name, height, image_height])
-    width_assert = tf.Assert(
-        tf.equal(width, image_width),
-        ['Wrong width for tensor %s [expected][actual]',
-         image.name, width, image_width])
-    asserts.extend([height_assert, width_assert])
+  height, width, _ = tf.shape(image)
 
   # Create a random bounding box.
   #
   # Use tf.random_uniform and not numpy.random.rand as doing the former would
   # generate random numbers at graph eval time, unlike the latter which
   # generates random numbers at graph definition time.
-  with tf.control_dependencies(asserts):
-    max_offset_height = tf.reshape(image_height - crop_height + 1, [])
-  with tf.control_dependencies(asserts):
-    max_offset_width = tf.reshape(image_width - crop_width + 1, [])
+  max_offset_height = height - crop_height + 1
+  max_offset_width = width - crop_width + 1
   offset_height = tf.random_uniform(
       [], maxval=max_offset_height, dtype=tf.int32)
   offset_width = tf.random_uniform(
       [], maxval=max_offset_width, dtype=tf.int32)
 
-  return [_crop(image, offset_height, offset_width,
-                crop_height, crop_width) for image in image_list]
+  crop_top = height - offset_height
+  return tf.slice(image,
+                  [crop_top, offset_width, 0],
+                  [crop_height, crop_width, 3])
 
 
 def _central_crop(image, crop_height, crop_width):
@@ -179,20 +129,13 @@ def _central_crop(image, crop_height, crop_width):
   Returns:
     3-D tensor with cropped image.
   """
-  shape = tf.shape(image)
-  height = shape[0]
-  width = shape[1]
+  height, width, _ = tf.shape(image)
 
   total_crop_height = (height - crop_height)
   crop_top = total_crop_height // 2
   total_crop_width = (width - crop_width)
   crop_left = total_crop_width // 2
   return tf.slice(image, [crop_top, crop_left, 0], [crop_height, crop_width, 3])
-
-  #offset_height = (height - crop_height) / 2
-  #offset_width = (width - crop_width) / 2
-
-  #return _crop(image, offset_height, offset_width, crop_height, crop_width)
 
 
 def _mean_image_subtraction(image, means):
@@ -274,9 +217,7 @@ def _aspect_preserving_resize(image, smallest_side):
   """
   smallest_side = tf.convert_to_tensor(smallest_side, dtype=tf.int32)
 
-  shape = tf.shape(image)
-  height = shape[0]
-  width = shape[1]
+  height, width, _ = tf.shape(image)
   new_height, new_width = _smallest_size_at_least(height, width, smallest_side)
 
   resized_image = tf.image.resize_images(
