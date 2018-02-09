@@ -280,7 +280,6 @@ def _aspect_preserving_resize(image, smallest_side):
   resized_image = tf.image.resize_images(
       image, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR,
       align_corners=False)
-  resized_image.set_shape([None, None, 3])
   return resized_image
 
 
