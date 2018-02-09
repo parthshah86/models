@@ -124,10 +124,11 @@ def _mean_image_subtraction(image, means):
   if len(means) != num_channels:
     raise ValueError('len(means) must match the number of channels')
 
-  channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
-  for i in range(num_channels):
-    channels[i] -= means[i]
-  return tf.concat(axis=2, values=channels)
+  means = tf.convert_to_tensor(means, dtype=tf.float32)
+  # We have a 1-D tensor of means; convert to 3-D.
+  means = tf.expand_dims(tf.expand_dims(means, 0), 0)
+
+  return (image - means)
 
 
 def _smallest_size_at_least(height, width, smallest_side):
