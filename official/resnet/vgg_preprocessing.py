@@ -183,10 +183,16 @@ def _central_crop(image, crop_height, crop_width):
   height = shape[0]
   width = shape[1]
 
-  offset_height = (height - crop_height) / 2
-  offset_width = (width - crop_width) / 2
+  total_crop_height = (height - crop_height)
+  crop_top = total_crop_height // 2
+  total_crop_width = (width - crop_width)
+  crop_left = total_crop_width // 2
+  return tf.slice(image, [crop_top, crop_left, 0], [crop_height, crop_width, 3])
 
-  return _crop(image, offset_height, offset_width, crop_height, crop_width)
+  #offset_height = (height - crop_height) / 2
+  #offset_width = (width - crop_width) / 2
+
+  #return _crop(image, offset_height, offset_width, crop_height, crop_width)
 
 
 def _mean_image_subtraction(image, means):
