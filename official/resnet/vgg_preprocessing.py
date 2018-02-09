@@ -168,29 +168,25 @@ def _random_crop(image_list, crop_height, crop_width):
                 crop_height, crop_width) for image in image_list]
 
 
-def _central_crop(image_list, crop_height, crop_width):
+def _central_crop(image, crop_height, crop_width):
   """Performs central crops of the given image list.
 
   Args:
-    image_list: a list of image tensors of the same dimension but possibly
-      varying channel.
+    image: a 3-D image tensor
     crop_height: the height of the image following the crop.
     crop_width: the width of the image following the crop.
 
   Returns:
-    the list of cropped images.
+    3-D tensor with cropped image.
   """
-  outputs = []
-  for image in image_list:
-    image_height = tf.shape(image)[0]
-    image_width = tf.shape(image)[1]
+  shape = tf.shape(image)
+  height = shape[0]
+  width = shape[1]
 
-    offset_height = (image_height - crop_height) / 2
-    offset_width = (image_width - crop_width) / 2
+  offset_height = (height - crop_height) / 2
+  offset_width = (width - crop_width) / 2
 
-    outputs.append(_crop(image, offset_height, offset_width,
-                         crop_height, crop_width))
-  return outputs
+  return _crop(image, offset_height, offset_width, crop_height, crop_width)
 
 
 def _mean_image_subtraction(image, means):
@@ -315,7 +311,7 @@ def preprocess_image(image, output_height, output_width, is_training=False,
     crop_fn = _central_crop
 
   image = _aspect_preserving_resize(image, resize_side)
-  image = crop_fn([image], output_height, output_width)[0]
+  image = crop_fn(image, output_height, output_width)
   image.set_shape([output_height, output_width, 3])
   image = tf.to_float(image)
   return _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
