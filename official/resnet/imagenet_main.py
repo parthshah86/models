@@ -103,7 +103,7 @@ def parse_example_proto(example_serialized):
 
   features = tf.parse_single_example(example_serialized, feature_map)
 
-  return features['image/encoded'], label
+  return features['image/encoded'], features['image/class/label']
 
 
 def parse_record(raw_record, is_training):
